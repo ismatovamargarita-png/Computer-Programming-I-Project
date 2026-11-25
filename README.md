@@ -18,7 +18,7 @@ Clone or download the full repository and open its root folder in VS Code with t
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install numpy==2.5.5 pandas==3.1.1 matplotlib==3.11.2 networkx==3.7 scipy==1.18.1 ipykernel==7.4.0
+.venv/bin/python -m pip install numpy==2.5.5 pandas==3.1.1 matplotlib==3.11.2 networkx==3.7 scipy==1.18.1 ipykernel==7.4.0 altair==6.3.0 vl-convert-python==1.9.0.post1
 ```
 
 On Windows, create the environment with `py -3.13 -m venv .venv` and use `.venv\Scripts\python.exe` in place of `.venv/bin/python`.
@@ -33,7 +33,7 @@ On Windows, create the environment with `py -3.13 -m venv .venv` and use `.venv\
 | --- | --- |
 | [`src/task1_2.py`](src/task1_2.py) | Original group script that reads the tennis data and generates the saved matrices, player statistics, and network figures. |
 | [`src/task1_2_helpers.py`](src/task1_2_helpers.py) | Functions called by the Tasks 1 and 2 notebook to rebuild the matrices, analyse components, and draw the worked example. |
-| [`src/task3.py`](src/task3.py) | Loads the completed transition matrix, runs power iteration from both starting players, and generates the [probability histories](figures/task3_player_probabilities.png) and [convergence plot](figures/task3_convergence.png). |
+| [`src/task3.py`](src/task3.py) | Loads the completed transition matrix, runs power iteration from both starting players, and uses [the Altair chart functions](src/task3_charts.py) to draw the two Task 3 figures. |
 | [`src/task4.py`](src/task4.py) | Computes and verifies the stationary distribution, expands the two worked equations, and checks the graph structure and eigenvalues. |
 
 The scripts can also be run from the repository root.
@@ -44,7 +44,10 @@ The scripts can also be run from the repository root.
 .venv/bin/python src/task4.py
 ```
 
-The first command regenerates `data/matrices.npz`, `data/player_statistics.csv`, and the original network figures. Task 3 saves its two figures in `figures/`. Task 4 prints its numerical checks in the terminal.
+The first command regenerates `data/matrices.npz`, `data/player_statistics.csv`, and the original network figures. Task 3 saves the updated figures in `figures/`. Task 4 prints its numerical checks in the terminal.
+
+- **Convergence plot** [SVG](figures/task3_convergence.svg) or [PNG](figures/task3_convergence.png)
+- **Player probability histories** [SVG](figures/task3_player_probabilities.svg) or [PNG](figures/task3_player_probabilities.png)
 
 ## Main results
 
