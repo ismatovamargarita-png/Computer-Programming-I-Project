@@ -10,6 +10,9 @@ import numpy as np
 
 PROJECT_DIR = Path(__file__).resolve().parents[1]
 STARTING_PLAYERS = ("Novak Djokovic", "Rohan Bopanna")
+PLOT_PLAYERS = (*STARTING_PLAYERS, "Alexander Zverev", "Martin Damm")
+PLAYER_COLORS = dict(zip(PLOT_PLAYERS, ("#2459A6", "#863E8D", "#BA500A", "#237A58")))
+PLAYER_LINE_STYLES = dict(zip(PLOT_PLAYERS, ("-", "--", "-.", ":")))
 TOLERANCE = 1e-10
 MAX_ITERATIONS = 5000
 
@@ -98,6 +101,72 @@ def run_from_starting_players(transition, player_ids):
     return runs
 
 
+def plot_player_probabilities(runs, player_ids):
+    """Return the figure of selected player probabilities for both starts."""
+    import matplotlib.pyplot as plt
+
+    max_steps = max(result.iterations for result in runs.values())
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), sharey=True, layout="constrained")
+    linear_threshold = 1e-7
+    tick_values = (0, 1e-6, 1e-4, 1e-2, 1)
+    tick_labels = ("0", "10⁻⁶", "10⁻⁴", "10⁻²", "1")
+
+    for ax, (name, result) in zip(axes, runs.items()):
+        ax.set_yscale("symlog", linthresh=linear_threshold)
+        for player, color in PLAYER_COLORS.items():
+            values = result.history[:, player_ids[player]]
+            # A linear band around zero lets us plot the original values, including zeros.
+            ax.plot(
+                range(len(values)), values, color=color, label=player,
+                linestyle=PLAYER_LINE_STYLES[player], linewidth=1.8,
+            )
+        ax.scatter(0, 1, color=PLAYER_COLORS[name], s=25, zorder=3)
+        ax.axhline(0, color="#64748B", linewidth=0.8, zorder=0)
+        ax.set(title=f"Start at {name}", xlabel="Step", xlim=(-0.5, max_steps + 0.5))
+        ax.set_yticks(tick_values, tick_labels)
+        ax.grid(alpha=0.2)
+    axes[0].set_ylim(-0.2 * linear_threshold, 1.25)
+    axes[0].set_ylabel("Player probability (log above 10⁻⁷)")
+    axes[1].legend(loc="upper right", fontsize=8)
+    fig.suptitle("Original walk from two starting players")
+    return fig
+
+
+def plot_convergence(runs, tolerance=TOLERANCE):
+    """Return the figure of the per-update change and stopping threshold."""
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=(8, 4.5), layout="constrained")
+    for name, result in runs.items():
+        ax.semilogy(
+            range(1, result.iterations + 1),
+            result.changes,
+            color=PLAYER_COLORS[name],
+            linestyle=PLAYER_LINE_STYLES[name],
+            linewidth=1.9,
+            label=f"Start at {name}",
+        )
+        if result.converged and result.changes[-1] > 0:
+            endpoint = (result.iterations, result.changes[-1])
+            ax.scatter(*endpoint, color=PLAYER_COLORS[name], s=26, zorder=4)
+            ax.annotate(
+                f"{result.iterations} steps", endpoint, xytext=(-6, -14),
+                textcoords="offset points", ha="right", va="top",
+                fontsize=9, color=PLAYER_COLORS[name],
+            )
+    ax.axhline(tolerance, color="gray", linestyle=":", label=f"Tolerance {tolerance:.0e}")
+    ax.set(
+        title="How quickly the original walk settles",
+        xlabel="Update number",
+        ylabel="Total absolute change (L1, log scale)",
+    )
+    ax.grid(alpha=0.2)
+    ax.margins(y=0.1)
+    ax.set_ylim(top=3)
+    ax.legend()
+    return fig
+
+
 def print_walk_summary(runs):
     """Report each run's starting behavior, stopping status, and final gap."""
     for name, result in runs.items():
@@ -109,21 +178,32 @@ def print_walk_summary(runs):
     print(f"L1 difference between final distributions: {np.abs(first.final - second.final).sum():.3e}")
 
 
-def main():
-    from task3_charts import save_figures
+def save_figures(runs, player_ids, figures_dir):
+    """Save both Task 3 figures for the report and close them."""
+    import matplotlib.pyplot as plt
 
+    figures_dir.mkdir(parents=True, exist_ok=True)
+    trajectory = plot_player_probabilities(runs, player_ids)
+    trajectory.savefig(figures_dir / "task3_player_probabilities.png", dpi=200)
+    plt.close(trajectory)
+    convergence = plot_convergence(runs)
+    convergence.savefig(figures_dir / "task3_convergence.png", dpi=200)
+    plt.close(convergence)
+
+
+def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--figures-dir", type=Path, default=PROJECT_DIR / "figures",
-        help="Directory for the Task 3 PNG and SVG figures.",
+        help="Directory for the two Task 3 figures.",
     )
     args = parser.parse_args()
     _, transition, player_ids = load_network()
     runs = run_from_starting_players(transition, player_ids)
     print_walk_summary(runs)
 
-    save_figures(runs, player_ids, args.figures_dir, TOLERANCE)
-    print(f"Saved the Task 3 PNG and SVG figures in {args.figures_dir}")
+    save_figures(runs, player_ids, args.figures_dir)
+    print(f"Saved the two Task 3 figures in {args.figures_dir}")
 
 
 if __name__ == "__main__":
